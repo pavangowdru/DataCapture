@@ -141,6 +141,64 @@ services:
     networks:
       - kafka-network
 
+# Spark Master Node
+  spark-master:
+    image: bitnami/spark:3.4
+    container_name: spark-master
+    environment:
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
+      SPARK_SSL_ENABLED: "no"
+    ports:
+      - "7077:7077"
+      - "8088:8080"
+    networks:
+      - kafka-network
+
+  # Spark Worker Node
+  spark-worker:
+    image: bitnami/spark:3.4
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: 2
+    networks:
+      - kafka-network
+
+  # Elasticsearch Node
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    container_name: elasticsearch_1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - bootstrap.memory_lock=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - kafka-network
+
+  # Kibana for Elasticsearch UI
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.0
+    container_name: kibana_1
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - kafka-network
+
+
 networks:
   kafka-network:
     name: kafka-network

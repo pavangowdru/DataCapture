@@ -1,3 +1,4 @@
+#! /bin/bash
 curl -X POST http://localhost:8093/connectors \
 -H "Content-Type: application/json" \
 -d '{
@@ -64,10 +65,12 @@ BEGIN
     END IF;
 
     -- Add metadata fields
-    change_details := change_details || jsonb_build_object('modified_by', current_user, 'modified_at', now());
+    change_details := change_details;
 
     -- Assign to NEW.change_info
     NEW.change_info := change_details;
+    NEW.modified_by := COALESCE(current_user, 'unknown');
+    NEW.modified_at := CURRENT_TIMESTAMP;
 
     RETURN NEW;
 END;
